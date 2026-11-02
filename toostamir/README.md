@@ -35,7 +35,15 @@ npm start                          # http://localhost:3000
 - فایل‌های این پوشه را (بدون `node_modules`) به مثلاً `~/toostamir_app` آپلود کنید (File Manager یا Git).
 - در File Manager فایل `config.env.example` را به `config.env` تغییر نام دهید و مقادیر DB_NAME/DB_USER/DB_PASS را با اطلاعات مرحله ۱ پر کنید.
 
-### ۳) ساخت اپ Node.js
+### ۳) نصب پکیج‌ها (مهم)
+در Terminal cPanel:
+```bash
+cd ~/toostamir_app
+npm install --omit=dev --no-optional
+```
+> **حتماً فلگ `--no-optional` را بگذارید:** پکیج اختیاری `better-sqlite3` فقط برای توسعه محلی است و روی هاست اشتراکی (که دسترسی apt/yum ندارد) بیلد آن ناموفق می‌ماند؛ با این فلگ npm آن را نادیده می‌گیرد و نصب موفق و سریع انجام می‌شود. سایت روی همان MariaDB کار می‌کند.
+
+### ۴) ساخت اپ Node.js
 - cPanel → **Setup Node.js App** (Application Manager)
 - Create Application:
   - Node.js version: 18 یا بالاتر
@@ -45,18 +53,15 @@ npm start                          # http://localhost:3000
 - پس از ساخت، در Terminal همان بخش:
 ```bash
 source ~/nodevenv/toostamir_app/18/bin/activate
-cd ~/toostamir_app
-npm install --omit=dev
 ```
-> نکته مهم: پکیج `better-sqlite3` نیاز به بیلد دارد. اگر بیلد آن روی هاست ناموفق بود، کافی است نصب نکنید؛ سایت با MariaDB کار می‌کند. در این حالت خط `better-sqlite3` را از `package.json` حذف و دوباره `npm install` کنید (یا `npm install --omit=dev --no-optional`).
 
 - روی **Restart App** کلیک کنید. لاگ باید شامل `[DB] Connected to MariaDB/MySQL` باشد.
 
-### ۴) دامنه
+### ۵) دامنه
 اگر Application URL را روی `toostamir.ir` ست کرده باشید، cPanel خودش پروکسی را تنظیم می‌کند.
 در غیر این صورت فایل `.htaccess` موجود (پروکسی به پورت 3000 + هدایت HTTPS) را داخل `public_html` کپی کنید.
 
-### ۵) بعد از اولین ورود
+### ۶) بعد از اولین ورود
 - در `/admin/settings` رمز پیش‌فرض (`admin123`) را عوض کنید.
 - یک `SESSION_SECRET` تصادفی در `config.env` بگذارید.
 
