@@ -15,11 +15,16 @@
   "license": "ISC",
   "description": "سایت تعمیرامیر - تعمیرات لپ‌تاپ و موبایل با پنل مدیریت محصولات و فرم تماس",
   "dependencies": {
-    "better-sqlite3": "^12.11.1",
     "ejs": "^7.0.2",
     "express": "^5.3.0",
     "express-session": "^1.19.0",
     "mariadb": "^3.5.4",
     "method-override": "^3.0.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.11.1"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

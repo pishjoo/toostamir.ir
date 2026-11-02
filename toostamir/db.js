@@ -39,6 +39,21 @@ let driverName = '';
 
 async function initMySQL() {
   const mariadb = require('mariadb');
+
+  // ابتدا بدون نام دیتابیس وصل می‌شویم تا در صورت نیاز خود دیتابیس را بسازیم
+  // (روی بعضی هاست‌ها کاربر از قبل به دیتابیس دسترسی دارد؛ اگر نداشت فقط پیام خطا می‌دهد).
+  let bootstrap;
+  try {
+    bootstrap = await mariadb.createConnection({
+      host: cfg.host, port: cfg.port, user: cfg.user, password: cfg.password
+    });
+    await bootstrap.query(
+      `CREATE DATABASE IF NOT EXISTS \`${cfg.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await bootstrap.end();
+  } catch (e) {
+    /* ادامه می‌دهیم؛ استخر اصلی پیام خطای دقیق‌تری می‌دهد */
+  }
+
   pool = mariadb.createPool({
     host: cfg.host,
     port: cfg.port,
@@ -172,9 +187,14 @@ async function ensureAdmin() {
   if (row) return;
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = hashPassword('admin123', salt);
-  await run("INSERT INTO settings (skey,sval) VALUES ('admin',?)",
-    [JSON.stringify({ username: 'admin', salt, hash })]);
-  console.log('[DB] Admin created -> username: admin  password: admin123');
+  try {
+    await run("INSERT INTO settings (skey,sval) VALUES ('admin',?)",
+      [JSON.stringify({ username: 'admin', salt, hash })]);
+    console.log('[DB] Admin created -> username: admin  password: admin123');
+  } catch (e) {
+    // اگر رکورد ادمین از قبل وجود داشته باشد (مثلاً اجرای قبلی) خطا ندهیم
+    if (e.code !== 'ER_DUP_ENTRY') throw e;
+  }
 }
 function ensureAdminSync() {
   const row = sqlite.prepare("SELECT * FROM settings WHERE key='admin'").get();
@@ -229,7 +249,13 @@ const api = {
     } else {
       console.warn('[DB] No DB credentials found in config.env — using SQLite (development only).');
     }
-    initSQLite();
+    try {
+      initSQLite();
+    } catch (e) {
+      console.error('[DB] SQLite fallback unavailable:', e.message);
+      console.error('[DB] لطفاً تنظیمات MariaDB در فایل config.env را کامل کنید (روی هاست اشتراکی الزامی است).');
+      process.exit(1);
+    }
   }
 };
 
