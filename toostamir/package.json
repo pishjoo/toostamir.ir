@@ -1,14 +1,15 @@
 {
   "name": "toostamir",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["toostamir", "repair", "shop"],
+  "author": "toostamir.ir",
   "license": "ISC",
-  "description": "",
+  "description": "سایت تعمیرامیر - تعمیرات لپ‌تاپ و موبایل با پنل مدیریت محصولات و فرم تماس",
   "dependencies": {
     "better-sqlite3": "^12.11.1",
     "ejs": "^7.0.2",
