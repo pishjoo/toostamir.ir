@@ -111,6 +111,8 @@ function show_price($n, bool $fa = true): string {
     $s = money($n);
     return $fa ? fa_digits($s) : $s;
 }
+/** تبدیل عدد یا رشته به ارقام فارسی (برای جاوااسکریپت صفحه پرداخت/سبد) */
+function fa($n): string { return fa_digits(number_format((float)(int)num_input((string)$n))); }
 
 /* ---------- تاریخ شمسی (تقویم رسمی ایران - چرخه ۲۸۲۰ ساله با جدول کبیسه قطعی) ---------- */
 /**

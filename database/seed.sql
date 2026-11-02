@@ -276,3 +276,14 @@ INSERT INTO shipping_methods (name, carrier, cost, free_over_amount, description
 
 -- نظرات مشتریان: عمداً خالی است. هیچ نظر ساختگی درج نمی‌شود؛
 -- پس از دریافت رضایت واقعی مشتریان، از پنل مدیریت > نظرات ثبت و تأیید کنید.
+
+-- دسته‌بندی دستگاه‌ها (بخش «دسته‌بندی دستگاه‌ها با تصاویر اختصاصی» صفحه اصلی و صفحه /dastebandi-dastgahha)
+INSERT INTO device_categories (name, slug, icon, description, service_id, sort_order) VALUES
+('ماشین لباسشویی','lambashui','washer','تعمیر و قطعات یدکی ماشین لباسشویی در مشهد',(SELECT id FROM services WHERE slug='washing-machine-repair'),1),
+('ظرفشویی','zarfshooei','dishwasher','تعمیر و قطعات ظرفشویی',(SELECT id FROM services WHERE slug='dishwasher-repair'),2),
+('یخچال و فریزر','yakhchal-freezer','fridge','تعمیر یخچال، فریزر و قطعات آن',(SELECT id FROM services WHERE slug='refrigerator-repair'),3),
+('پکیج دیواری','package','boiler','تعمیر پکیج دیواری و عیب‌یابی برد',(SELECT id FROM services WHERE slug='wall-boiler-repair'),4),
+('مایکروویو','microwave','microwave','تعمیر مایکروویو و ماژیک',(SELECT id FROM services WHERE slug='microwave-repair'),5),
+('جاروبرقی','jaru-barqi','vacuum','تعمیر جاروبرقی و موتور جارو',(SELECT id FROM services WHERE slug='vacuum-cleaner-repair'),6),
+('برد الکترونیکی','board','board','تعمیر تخصصی برد لوازم خانگی و شخصی',(SELECT id FROM services WHERE slug='electronic-board-repair'),7),
+('لوازم شخصی برقی','levazem-shakhsi','personal','سشوار، اصلاح، اتو و سایر لوازم شخصی برقی',NULL,8);

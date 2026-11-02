@@ -43,6 +43,11 @@ class Page extends BaseModel {
     protected static array $fillable = ['title','slug','body','is_published','show_in_footer','seo_title','seo_description','canonical_url','robots_meta','schema_type'];
     public static function bySlug(string $slug): ?array { return static::findBy('slug', $slug); }
 }
+class DeviceCategory extends BaseModel {
+    protected static string $table = 'device_categories';
+    protected static array $fillable = ['name','slug','icon','image_path','description','service_id','sort_order','is_active'];
+    public static function activeList(): array { return static::all('is_active=1', [], 'sort_order ASC, id ASC'); }
+}
 class ArticleTag extends BaseModel {
     protected static string $table = 'article_tags';
     public static function sync(int $articleId, array $names): void {

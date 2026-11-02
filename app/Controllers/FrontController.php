@@ -317,6 +317,54 @@ class FrontController {
         ]));
     }
 
+
+    public function devices(): void {
+        $devices = DeviceCategory::activeList();
+        $groups = [];
+        foreach ($devices as $d) {
+            $svc = !empty($d['service_id']) ? Service::find((int)$d['service_id']) : null;
+            $href = $svc ? '/khedmat/' . $svc['slug'] : '/forushgah?category_slug=' . urlencode($d['slug']);
+            if (!$svc) { $c = Category::bySlug($d['slug']); if ($c) $href = '/forushgah?category=' . (int)$c['id']; }
+            $cnt = Product::count('is_published=1 AND category_id IN (SELECT id FROM categories WHERE slug=? OR parent_id=(SELECT id FROM categories WHERE slug=? LIMIT 1))', [$d['slug'], $d['slug']]);
+            $groups[] = ['name' => $d['name'], 'icon' => (string)($d['icon'] ?? ''), 'href' => $href, 'cnt' => max($cnt, 0)];
+        }
+        $this->view('front/devices', $this->share([
+            'groups' => $groups,
+            'title' => 'دسته‌بندی دستگاه‌ها و تعمیرات - ' . setting('site_name'),
+            'meta_description' => 'تعمیر و قطعات یدکی انواع لوازم خانگی در مشهد: لباسشویی، ظرفشویی، یخچال، پکیج، مایکروویو، جاروبرقی و برد الکترونیکی.',
+            'breadcrumbs' => ['خانه' => '/', 'دستگاه‌ها' => '/dastebandi-dastgahha'],
+        ]));
+    }
+
+    public function search(): void {
+        $q = trim((string)($_GET['q'] ?? ''));
+        $res = $q !== '' ? Product::search(['q' => $q, 'page' => max(1, (int)($_GET['page'] ?? 1)), 'sort' => '', 'brand' => [], 'min_price' => '', 'max_price' => '', 'in_stock' => false, 'category' => 0]) : ['items' => [], 'total' => 0, 'pages' => 1, 'page' => 1];
+        $arts = $q !== '' ? Article::paginate(['q' => $q, 'cat' => '', 'page' => 1])['items'] : [];
+        $svcs = $q !== '' ? array_filter(Service::published(), fn($s) => mb_strpos(mb_strtolower($s['name'] . ' ' . (string)$s['excerpt']), mb_strtolower($q)) !== false) : [];
+        $base = '/jostejo?q=' . urlencode($q);
+        $this->view('front/search', $this->share([
+            'q' => $q, 'res' => $res, 'articles' => $arts, 'services' => array_values($svcs),
+            'pagination' => paginate_links($res['page'], $res['pages'], $base),
+            'title' => ($q !== '' ? 'نتیجه جستجو برای «' . $q . '»' : 'جستجو') . ' - ' . setting('site_name'),
+            'meta_description' => 'جستجو در محصولات، مقالات و خدمات توس تعمیر',
+            'robots_meta' => 'noindex,follow',
+            'breadcrumbs' => ['خانه' => '/', 'جستجو' => '/jostejo'],
+        ]));
+    }
+
+    public function sitemapPage(): void {
+        $this->view('front/sitemap', $this->share([
+            'services' => Service::published(),
+            'categories' => Category::activeTree(),
+            'articles' => Article::published(200),
+            'pages' => Page::all('is_published=1', [], 'id ASC'),
+            'products' => Database::all('SELECT slug,name FROM products WHERE is_published=1 ORDER BY id DESC LIMIT 500'),
+            'title' => 'نقشه سایت - ' . setting('site_name'),
+            'meta_description' => 'نقشه سایت توس تعمیر؛ فهرست خدمات، محصولات، مقالات و صفحات.',
+            'breadcrumbs' => ['خانه' => '/', 'نقشه سایت' => '/naghshe-sayt'],
+        ]));
+    }
+
     public function commentSubmit(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_verify()) json_out(['ok' => false, 'msg' => 'اعتبار نامعتبر'], 419);
         $type = (string)($_POST['target_type'] ?? '');

@@ -8,6 +8,10 @@ class Icons
 {
     public static function service(string $icon, string $fallbackName = ''): string
     {
+        // تطبیق مستقیم کلید (مثل iconهای device_categories: washer/dishwasher/...)
+        if (isset(self::ICONS[$icon])) return self::ICONS[$icon];
+        $aliasKey = self::detect($icon, ''); // نگاشت نام‌های رایج ایندکس (dishwasher->dish و ...)
+        if (isset(self::ICONS[$aliasKey]) && $aliasKey !== 'wrench') return self::ICONS[$aliasKey];
         $key = self::detect($icon, $fallbackName);
         return self::ICONS[$key] ?? self::ICONS['wrench'];
     }
@@ -22,15 +26,15 @@ class Icons
     }
 
     private const ALIASES = [
-        'washer'   => ['washer', 'لباسشویی'],
-        'dish'     => ['dishwasher', 'ظرفشویی'],
-        'fridge'   => ['fridge', 'refrigerator', 'یخچال', 'فریزر', 'freezer'],
-        'boiler'   => ['boiler', 'پکیج', 'buchi', 'گرمکن'],
+        'washer'   => ['washer', 'lambashui', 'لباسشویی'],
+        'dish'     => ['dishwasher', 'zarfshooei', 'ظرفشویی'],
+        'fridge'   => ['fridge', 'refrigerator', 'freezer', 'یخچال', 'فریزر', 'yakhchal'],
+        'boiler'   => ['boiler', 'package', 'پکیج', 'buchi', 'گرمکن'],
         'micro'    => ['microwave', 'مایکرو'],
-        'vacuum'   => ['vacuum', 'جارو'],
+        'vacuum'   => ['vacuum', 'jaru', 'جارو'],
         'pcb'      => ['pcb', 'board', 'برد', 'electronic'],
         'cooler'   => ['cooler', 'ac', 'conditioner', 'کولر', 'اسپلیت'],
-        'personal' => ['personal', 'اتو', 'سشوار', 'مو'],
+        'personal' => ['personal', 'levazem', 'اتو', 'سشوار', 'مو'],
         'part'     => ['part', 'قطعه', 'پمپ', 'موتور'],
     ];
 
