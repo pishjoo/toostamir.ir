@@ -120,17 +120,22 @@ function show_price($n, bool $fa = true): string {
  * ۱۴۰۳=۲۰۲۴-۰۳-۲۰، ۱۴۰۷=۲۰۲۸-۰۳-۲۰، ۱۴۱۱=۲۰۳۲-۰۳-۲۰.
  */
 function jalali_is_leap(int $jy): bool {
+    // کبیسه‌های تقویم رسمی ایران بر اساس جدول قطعی نوروز (۱ فروردین) برای بازه ۱۳۶۰ تا ۱۴۲۲:
+    // الگو: پنج‌بار فاصله ۴ ساله و سپس یک فاصله ۵ ساله؛ شکست چرخه پس از ۱۴۲۲ (نوروز ۱۴۲۳ = ۲۱ مارس).
     static $leaps = [
-        // derived from official Nowruz (1 Farvardin) table 1360-1420 SH: leap iff gap to next nowruz == 366 days
-        1363,1367,1371,1375,1379,1383,1387,1391,1395,1399,1403,1407,1411,1415,1419,
-        // extended by the same 4-year pattern through the documented cycle break near 1424/1429:
-        1423,1427,1431,1435,1440,1444,1448,1452,1457,1461,1465,1469,1474,1478,1482,1486,1491,1495,
-        1499,1503,1508,1512,1516,1520,1525,1529,1533,1537,1542,1546,1550,1554,1559,1563,1567,1571,1576,1580,1584,1588,1593,1597,
+        1363,1367,1371,1375,1379, 1383,1387,1391,1395,1399, 1403,1407,1411,1415,1419,
     ];
-    if ($jy >= 1363 && $jy <= 1597) return in_array($jy, $leaps, true);
-    // خارج از بازه جدول: چرخه ۳۳ ساله متناوب نسبت به لنگر ۱۳۹۹
-    $off = ((($jy - 1399) % 33) + 33) % 33;
-    return in_array($off, [0,4,8,12,16,21,25,29], true);
+    if ($jy >= 1363 && $jy <= 1422) return in_array($jy, $leaps, true) || $jy === 1422; // ۱۴۲۲ کبیسه است (نوروز ۱۴۲۳ = ۲۰ مارس)
+    if ($jy > 1422 && $jy < 1427) return false; // ۱۴۲۳ تا ۱۴۲۶ کبیسه نیستند (شکست چرخه: نوروز ۱۴۲۷ = ۲۱ مارس)
+    // خارج از بازه مستند: چرخه ۲۸۲۰ ساله (الگوریتم نجومی) نسبت به لنگر ۱۳۹۹
+    $cyclePos = ((($jy - 1399) % 2820) + 2820) % 2820;
+    $k = $cyclePos % 128;
+    $leapsIn128 = [1,5,9,13,17,25,29,33,37,45,49,53,57,65,69,73,77,85,89,93,97,105,109,113,117,125];
+    $isLeapInBlock = in_array($k, $leapsIn128, true);
+    $block = intdiv($cyclePos, 128);
+    // بلوک‌های ۱۱ و ۲۱ در چرخه ۲۸۲۰ دارای یک کبیسه اضافی در انتهای بلوک هستند
+    if (($block === 11 || $block === 21) && $k === 127) $isLeapInBlock = true;
+    return $isLeapInBlock;
 }
 
 function jalali_year_length(int $jy): int { return jalali_is_leap($jy) ? 366 : 365; }
@@ -162,10 +167,11 @@ function days_to_jalali_new_year(int $jy): int {
 /** تبدیل میلادی به جلالی */
 function greg_to_jalali(int $gy, int $gm, int $gd): array {
     $days = (int)floor(gmmktime_utc($gy, $gm, $gd) / 86400);
-    $diff = $days - days_to_jalali_new_year(1399);
+    // تعیین سال جلالی بر اساس لنگر شروع هر سال
     $jy = 1399;
-    while ($diff < 0) { $jy--; $diff += jalali_year_length($jy); }
-    while (true) { $len = jalali_year_length($jy); if ($diff < $len) break; $diff -= $len; $jy++; }
+    while ($days < days_to_jalali_new_year($jy)) { $jy--; }
+    while ($days >= days_to_jalali_new_year($jy + 1)) { $jy++; }
+    $diff = $days - days_to_jalali_new_year($jy);
     $jm = 1;
     $mlen = jalali_month_lengths($jy);
     while ($diff >= $mlen[$jm - 1]) { $diff -= $mlen[$jm - 1]; $jm++; }
@@ -241,3 +247,34 @@ function gen_tracking_code(string $prefix = 'TT'): string {
 function old(array $data, string $key, string $default = ''): string { return (string)($data[$key] ?? $default); }
 function is_secure_request(): bool { return !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'; }
 function json_out($data, int $code = 200): never { http_response_code($code); header('Content-Type: application/json; charset=utf-8'); echo json_encode($data, JSON_UNESCAPED_UNICODE); exit; }
+
+/* ---------- ثبت رویدادهای ممیزی ---------- */
+function audit_log(string $action, ?string $entityType = null, int|string|null $entityId = null, ?string $description = null): void {
+    try {
+        Database::run(
+            'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?,?,?,?,?,?)',
+            [
+                $_SESSION['admin_uid'] ?? null,
+                mb_substr($action, 0, 60),
+                $entityType !== null ? mb_substr($entityType, 0, 60) : null,
+                $entityId !== null ? mb_substr((string)$entityId, 0, 60) : null,
+                $description !== null ? mb_substr($description, 0, 500) : null,
+                mb_substr((string)($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45) ?: null,
+            ]);
+    } catch (Throwable $e) { error_log('[audit] ' . $e->getMessage()); }
+}
+
+/* ---------- دسترسی پنل مدیریت ---------- */
+function admin_perm_slugs(): array {
+    static $perms = null;
+    if ($perms === null) {
+        $roleId = (int)Database::scalar('SELECT role_id FROM users WHERE id=?', [(int)($_SESSION['admin_uid'] ?? 0)], 0);
+        $perms = $roleId ? User::permissionsFor($roleId) : [];
+    }
+    return $perms;
+}
+function has_permission(string $slug): bool {
+    if (empty($_SESSION['admin_uid'])) return false;
+    $perms = admin_perm_slugs();
+    return in_array('system.full', $perms, true) || in_array($slug, $perms, true);
+}

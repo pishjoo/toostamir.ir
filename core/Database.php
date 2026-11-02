@@ -67,6 +67,13 @@ class Database {
         return self::run("DELETE FROM `$table` WHERE $where", $params)->rowCount();
     }
 
+
+    /** مقدار اول ستون اول نتیجه (با نام امن scalar برای سازگاری کد) */
+    public static function scalar(string $sql, array $params = [], $default = null) {
+        $v = self::run($sql, $params)->fetchColumn();
+        return $v === false ? $default : $v;
+    }
+
     public static function begin(): void { self::pdo()->beginTransaction(); }
     public static function commit(): void { self::pdo()->commit(); }
     public static function rollBack(): void { if (self::pdo()->inTransaction()) self::pdo()->rollBack(); }

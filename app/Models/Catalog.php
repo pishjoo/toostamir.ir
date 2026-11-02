@@ -1,0 +1,36 @@
+<?php
+/** مدل‌های ساده مرجع (Catalog) */
+class Category extends BaseModel {
+    protected static string $table = 'categories';
+    protected static array $fillable = ['parent_id','name','slug','description','image_path','sort_order','is_active','seo_title','seo_description'];
+    public static function activeTree(): array { return static::all('is_active=1', [], 'sort_order ASC, id ASC'); }
+    public static function bySlug(string $slug): ?array { return static::findBy('slug', $slug); }
+}
+class Brand extends BaseModel {
+    protected static string $table = 'brands';
+    protected static array $fillable = ['name','slug','logo_path','description','is_active','sort_order'];
+    public static function activeList(): array { return static::all('is_active=1', [], 'sort_order ASC, name ASC'); }
+}
+class Service extends BaseModel {
+    protected static string $table = 'services';
+    protected static array $fillable = ['parent_id','name','slug','icon','excerpt','body','common_problems','symptoms','causes','diagnostic_steps','image_path','is_board_service','is_published','sort_order','seo_title','seo_description','seo_keywords','canonical_url','robots_meta','og_image','schema_type','alt_text'];
+    public static function published(): array { return static::all('is_published=1', [], 'sort_order ASC, id ASC'); }
+    public static function bySlug(string $slug): ?array { return static::findBy('slug', $slug); }
+}
+class ArticleCategory extends BaseModel {
+    protected static string $table = 'article_categories';
+    protected static array $fillable = ['name','slug','description','seo_title','seo_description','sort_order'];
+}
+class Faq extends BaseModel {
+    protected static string $table = 'faqs';
+    protected static array $fillable = ['category','question','answer','target_type','target_id','sort_order','is_active'];
+    public static function forTarget(?string $type = null, ?int $id = null): array {
+        if ($type === null) return static::all('is_active=1', [], 'sort_order ASC');
+        return static::all('is_active=1 AND target_type=? AND (target_id=? OR target_id IS NULL)', [$type, (string)$id], 'sort_order ASC');
+    }
+}
+class Page extends BaseModel {
+    protected static string $table = 'pages';
+    protected static array $fillable = ['title','slug','body','is_published','show_in_footer','seo_title','seo_description','canonical_url','robots_meta','schema_type'];
+    public static function bySlug(string $slug): ?array { return static::findBy('slug', $slug); }
+}
