@@ -8,6 +8,8 @@ define('TT_START', microtime(true));
 $ROOT = dirname(__DIR__);
 
 require $ROOT . '/app/Helpers/functions.php';
+require $ROOT . '/app/Helpers/Icons.php';
+require $ROOT . '/app/Helpers/Placeholder.php';
 
 $appCfg = require $ROOT . '/config/app.php';
 $GLOBALS['TT_APP'] = $appCfg;

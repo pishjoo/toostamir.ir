@@ -33,13 +33,13 @@ class CartController {
                 Cart::remove((int)$rid);
             }
         }
-        redirect('/سبد-خرید');
+        redirect('/sabad-kharid');
     }
 
     public function removeItem(): void {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_verify()) redirect('/سبد-خرید');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_verify()) redirect('/sabad-kharid');
         Cart::remove((int)($_POST['item_id'] ?? 0));
-        redirect('/سبد-خرید');
+        redirect('/sabad-kharid');
     }
 
     public function coupon(): void {
@@ -52,7 +52,7 @@ class CartController {
 
     public function checkout(): void {
         $cart = Cart::contents();
-        if (!$cart['items']) { flash('error', 'سبد خرید شما خالی است.'); redirect('/فروشگاه'); }
+        if (!$cart['items']) { flash('error', 'سبد خرید شما خالی است.'); redirect('/forushgah'); }
         View::render('front/checkout', [
             'cart' => $cart,
             'couponCode' => (string)($_SESSION['coupon_code'] ?? ''),
@@ -64,10 +64,10 @@ class CartController {
     }
 
     public function placeOrder(): void {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') redirect('/سبد-خرید');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') redirect('/sabad-kharid');
         require_csrf();
         $cart = Cart::contents();
-        if (!$cart['items']) { flash('error', 'سبد خرید خالی است.'); redirect('/فروشگاه'); }
+        if (!$cart['items']) { flash('error', 'سبد خرید خالی است.'); redirect('/forushgah'); }
 
         $name = clean_text($_POST['name'] ?? '');
         $mobileRaw = (string)($_POST['mobile'] ?? '');
@@ -82,7 +82,7 @@ class CartController {
         $shipId = (int)($_POST['shipping_method_id'] ?? 0);
         if (!$shipId || !Database::one('SELECT id FROM shipping_methods WHERE id=? AND is_active=1', [$shipId])) $errors[] = 'روش ارسال را انتخاب کنید.';
 
-        if ($errors) { foreach ($errors as $er) flash('error', $er); $_SESSION['old_form'] = $_POST; redirect('/تکمیل-سفارش'); }
+        if ($errors) { foreach ($errors as $er) flash('error', $er); $_SESSION['old_form'] = $_POST; redirect('/takmil-safarish'); }
 
         $customerId = Customer::findOrCreate($name, $mobile, filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL) ?: null);
         unset($_SESSION['old_form']);
@@ -100,7 +100,7 @@ class CartController {
         ], Cart::cartId());
         unset($_SESSION['coupon_code']);
 
-        if (!$res['ok']) { flash('error', $res['msg']); redirect('/تکمیل-سفارش'); }
+        if (!$res['ok']) { flash('error', $res['msg']); redirect('/takmil-safarish'); }
 
         $_SESSION['last_order_tracking'] = $res['tracking'];
         audit_log('order_placed', 'order', (int)$res['id'], 'total=' . $res['total']);
@@ -109,21 +109,21 @@ class CartController {
         // انتخاب درگاه
         $gwKey = (string)($_POST['gateway'] ?? '');
         if ($gwKey === 'manual' || $gwKey === '') {
-            redirect('/پیگیری-سفارش?code=' . urlencode($res['tracking']));
+            redirect('/peigiri-order?code=' . urlencode($res['tracking']));
         }
         $pay = PaymentManager::start((int)$res['id'], $gwKey);
         if ($pay['ok'] && !empty($pay['redirect'])) {
             header('Location: ' . $pay['redirect']); exit;
         }
         flash($pay['ok'] ? 'success' : 'error', $pay['msg'] ?? 'آماده‌سازی پرداخت...');
-        redirect('/پرداخت/' . $res['tracking']);
+        redirect('/pay/' . $res['tracking']);
     }
 
     /** صفحه پرداخت مجدد برای سفارش پرداخت‌نشده */
     public function payPage(string $tracking): void {
         $order = Order::byTracking($tracking);
         if (!$order) abort404();
-        if ($order['payment_status'] === 'paid') { flash('success', 'این سفارش قبلاً پرداخت شده است.'); redirect('/پیگیری-سفارش?code=' . urlencode($tracking)); }
+        if ($order['payment_status'] === 'paid') { flash('success', 'این سفارش قبلاً پرداخت شده است.'); redirect('/peigiri-order?code=' . urlencode($tracking)); }
         View::render('front/pay', [
             'order' => $order,
             'gateways' => PaymentManager::activeGateways(),
@@ -141,7 +141,7 @@ class CartController {
         $res = PaymentManager::start((int)$order['id'], (string)($_POST['gateway'] ?? ''));
         if ($res['ok'] && !empty($res['redirect'])) { header('Location: ' . $res['redirect']); exit; }
         flash('error', $res['msg'] ?? 'امکان پرداخت آنلاین در حال حاضر وجود ندارد.');
-        redirect('/پرداخت/' . $tracking);
+        redirect('/pay/' . $tracking);
     }
 
     /** callback درگاه‌ها (GET از سمت بانک) */
@@ -154,7 +154,7 @@ class CartController {
         }
         if ($res['ok']) flash('success', 'پرداخت با موفقیت انجام شد. سفارش شما در حال پردازش است.');
         else flash('error', (string)($res['msg'] ?? 'پرداخت ناموفق بود.'));
-        redirect($tracking ? '/پیگیری-سفارش?code=' . urlencode($tracking) : '/');
+        redirect($tracking ? '/peigiri-order?code=' . urlencode($tracking) : '/');
     }
 
     /** پیگیری سفارش خرید */
