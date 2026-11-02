@@ -1,0 +1,21 @@
+<%- include('header') %>
+<div class="page-head-admin"><h1>تنظیمات</h1></div>
+
+<% if (msg) { %><div class="panel"><div class="alert success"><%= msg %></div></div><% } %>
+
+<div class="panel">
+  <h2>تغییر رمز عبور مدیر</h2>
+  <form method="post" action="/admin/settings/password" class="form" style="max-width:420px">
+    <label>رمز عبور جدید (حداقل ۶ کاراکتر)
+      <input type="password" name="new_password" required minlength="6">
+    </label>
+    <button class="btn" type="submit">ذخیره رمز جدید</button>
+  </form>
+</div>
+
+<div class="panel note-panel">
+  💳 <strong>وضعیت درگاه پرداخت:</strong> اتصال به <strong>زرین‌پال</strong> هنوز انجام نشده و در حال انجام است.<br>
+  🛡️ <strong>گارانتی:</strong> گارانتی تعمیرات در صفحه «گارانتی» سایت نمایش داده می‌شود.<br>
+  📸 <strong>اینستاگرام:</strong> <a href="https://instagram.com/toostamir" target="_blank">@toostamir</a> | 🌐 toostamir.ir
+</div>
+<%- include('footer') %>

@@ -1,0 +1,63 @@
+<% const isNew = !p || !p.id; %>
+<%- include('header') %>
+<div class="page-head-admin">
+  <h1><%= isNew ? 'افزودن محصول جدید' : 'ویرایش محصول' %></h1>
+  <a class="btn btn-sm btn-outline" href="/admin/products">→ بازگشت به لیست</a>
+</div>
+
+<div class="panel">
+  <% if (error) { %><div class="alert error"><%= error %></div><% } %>
+  <form method="post" action="<%= isNew ? '/admin/products' : '/admin/products/' + p.id + '?_method=PUT' %>" class="form admin-form">
+    <div class="form-grid">
+      <label class="full">نام محصول *
+        <input type="text" name="name" required value="<%= p ? p.name : '' %>" placeholder="مثلاً تعمیر لپ‌تاپ ایسوس X550">
+      </label>
+
+      <label>دسته‌بندی
+        <input type="text" name="category" list="cats" value="<%= p ? p.category : '' %>" placeholder="لپ تاپ / موبایل / لوازم جانبی / خدمات">
+        <datalist id="cats">
+          <option value="لپ تاپ"></option>
+          <option value="لپ تاپ استوک"></option>
+          <option value="موبایل"></option>
+          <option value="خدمات تعمیرات"></option>
+          <option value="لوازم جانبی"></option>
+        </datalist>
+      </label>
+
+      <label>موجودی (عدد)
+        <input type="number" name="stock" min="0" value="<%= p ? p.stock : 0 %>">
+      </label>
+
+      <label>قیمت (تومان) — برای خدمات استعلامی، ۰ وارد کنید
+        <input type="number" name="price" min="0" step="1000" value="<%= p ? p.price : 0 %>">
+      </label>
+
+      <label>قیمت قبل از تخفیف (تومان)
+        <input type="number" name="old_price" min="0" step="1000" value="<%= p ? p.old_price : 0 %>">
+      </label>
+
+      <label class="full">آدرس تصویر (URL یا مسیر مثل /public/img/xxx.jpg)
+        <input type="text" name="image" value="<%= p ? p.image : '' %>" placeholder="خالی بگذارید تا تصویر placeholder نمایش داده شود">
+      </label>
+
+      <label class="full">توضیح کوتاه
+        <input type="text" name="short_desc" value="<%= p ? p.short_desc : '' %>" placeholder="مثلاً گارانتی ۳ ماهه تعمیرات">
+      </label>
+
+      <label class="full">توضیحات کامل
+        <textarea name="description" rows="6" placeholder="جزئیات تعمیر/مشخصات فنی..."><%= p ? p.description : '' %></textarea>
+      </label>
+
+      <label class="checkbox-row full">
+        <input type="checkbox" name="is_active" value="1" <%= (!p || p.is_active) ? 'checked' : '' %>>
+        فعال باشد (در سایت نمایش داده شود)
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn"><%= isNew ? 'ثبت محصول' : 'ذخیره تغییرات' %></button>
+      <a href="/admin/products" class="btn btn-outline">انصراف</a>
+    </div>
+  </form>
+</div>
+<%- include('footer') %>

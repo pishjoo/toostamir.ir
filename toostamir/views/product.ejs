@@ -1,0 +1,56 @@
+<%- include('partials/header') %>
+
+<div class="container section product-detail">
+  <a href="/products" class="back">→ بازگشت به محصولات</a>
+  <div class="detail-grid">
+    <div class="detail-img">
+      <% if (p.image) { %>
+        <img src="<%= p.image %>" alt="<%= p.name %>">
+      <% } else { %>
+        <div class="placeholder big"><span>🖼️</span><small>تصویر این محصول به‌زودی اضافه می‌شود</small></div>
+      <% } %>
+    </div>
+    <div class="detail-info">
+      <div class="cat"><%= p.category %></div>
+      <h1><%= p.name %></h1>
+      <p class="short-desc"><%= p.short_desc %></p>
+
+      <% if (p.price > 0) { %>
+        <div class="price-row big">
+          <span class="price"><%= toman(p.price) %> تومان</span>
+          <% if (p.old_price > p.price) { %><span class="old"><%= toman(p.old_price) %></span><% } %>
+        </div>
+        <p class="stock-note">
+          <% if (p.category.includes('تعمیر')) { %>
+            🛠️ خدمت تعمیراتی - نیازمند استعلام تلفنی
+          <% } else if (p.stock > 0) { %>
+            ✅ موجود در انبار (<%= toman(p.stock) %> عدد)
+          <% } else { %>
+            ⏰ ناموجود - برای استعلام تماس بگیرید
+          <% } %>
+        </p>
+      <% } else { %>
+        <div class="consult-box">💬 قیمت این خدمت پس از <strong>استعلام تلفنی</strong> مشخص می‌شود.</div>
+      <% } %>
+
+      <div class="card-actions">
+        <a class="btn" href="/contact?subject=<%= encodeURIComponent('استعلام: ' + p.name) %>">استعلام و سفارش</a>
+        <a class="btn btn-outline" href="/warranty">شرایط گارانتی</a>
+      </div>
+
+      <div class="badges">
+        <span>🛡️ دارای گارانتی تعمیرات</span>
+        <span>💳 پرداخت آنلاین (زرین‌پال) به‌زودی فعال می‌شود</span>
+      </div>
+    </div>
+  </div>
+
+  <% if (p.description) { %>
+    <div class="desc">
+      <h2>توضیحات</h2>
+      <p><%= p.description %></p>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

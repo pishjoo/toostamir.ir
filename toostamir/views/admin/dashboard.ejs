@@ -1,0 +1,34 @@
+<%- include('header') %>
+<div class="page-head-admin"><h1>داشبورد</h1></div>
+
+<div class="stat-grid">
+  <div class="stat"><span>📦</span><b><%= toman(stats.products) %></b><small>کل محصولات</small></div>
+  <div class="stat green"><span>✅</span><b><%= toman(stats.active) %></b><small>فعال در سایت</small></div>
+  <div class="stat blue"><span>✉️</span><b><%= toman(stats.messages) %></b><small>پیام جدید تماس</small></div>
+  <div class="stat orange"><span>⚠️</span><b><%= toman(stats.lowStock) %></b><small>موجودی کم/ناموجود</small></div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>آخرین محصولات</h2><a class="btn btn-sm" href="/admin/products/new">+ افزودن محصول</a></div>
+  <table class="table">
+    <thead><tr><th>تصویر</th><th>نام</th><th>دسته</th><th>قیمت (تومان)</th><th>موجودی</th><th>وضعیت</th><th></th></tr></thead>
+    <tbody>
+      <% recent.forEach(p => { %>
+      <tr>
+        <td><% if (p.image) { %><img src="<%= p.image %>" class="thumb"><% } else { %><div class="thumb placeholder-mini">🖼️</div><% } %></td>
+        <td><%= p.name %></td>
+        <td><%= p.category %></td>
+        <td><%= p.price > 0 ? toman(p.price) : 'استعلامی' %></td>
+        <td><%= toman(p.stock) %></td>
+        <td><span class="pill <%= p.is_active ? 'ok':'off' %>"><%= p.is_active ? 'فعال':'غیرفعال' %></span></td>
+        <td><a class="btn btn-sm btn-outline" href="/admin/products/<%= p.id %>/edit">ویرایش</a></td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<div class="panel note-panel">
+  💳 <strong>زرین‌پال:</strong> اتصال به درگاه پرداخت هنوز انجام نشده و در حال انجام است. تا فعال شدن درگاه، سفارش‌ها از طریق استعلام تلفنی و فرم تماس هماهنگ می‌شوند.
+</div>
+<%- include('footer') %>

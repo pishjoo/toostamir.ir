@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'پنل مدیریت تعمیرامیر' %></title>
+  <link rel="stylesheet" href="/public/style.css">
+</head>
+<body class="admin-body">
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="brand">🔧 تعمیر<span class="accent">امیر</span><small>پنل مدیریت</small></div>
+    <nav>
+      <a href="/admin" class="<%= path === '/admin' ? 'active' : '' %>">📊 داشبورد</a>
+      <a href="/admin/products" class="<%= path.startsWith('/admin/products') ? 'active' : '' %>">📦 محصولات</a>
+      <a href="/admin/products/new" class="">➕ افزودن محصول</a>
+      <a href="/admin/messages" class="<%= path.startsWith('/admin/messages') ? 'active' : '' %>">✉️ پیام‌های تماس</a>
+      <a href="/admin/settings" class="<%= path.startsWith('/admin/settings') ? 'active' : '' %>">⚙️ تنظیمات</a>
+      <a href="/" target="_blank">🌐 مشاهده سایت</a>
+      <a href="/admin/logout" class="logout">🚪 خروج</a>
+    </nav>
+  </aside>
+  <main class="admin-main">
