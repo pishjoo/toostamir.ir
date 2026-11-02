@@ -1,0 +1,44 @@
+<%- include('header') %>
+<div class="page-head-admin">
+  <h1>مدیریت محصولات</h1>
+  <a class="btn btn-sm" href="/admin/products/new">+ افزودن محصول جدید</a>
+</div>
+
+<div class="panel">
+  <% if (products.length === 0) { %>
+    <div class="empty">هنوز محصولی ثبت نشده است. روی «افزودن محصول جدید» کلیک کنید.</div>
+  <% } else { %>
+  <table class="table">
+    <thead>
+      <tr><th>تصویر</th><th>نام محصول</th><th>دسته</th><th>قیمت</th><th>قیمت قبل</th><th>موجودی</th><th>وضعیت</th><th>عملیات</th></tr>
+    </thead>
+    <tbody>
+      <% products.forEach(p => { %>
+      <tr>
+        <td><% if (p.image) { %><img src="<%= p.image %>" class="thumb"><% } else { %><div class="thumb placeholder-mini">🖼️</div><% } %></td>
+        <td class="name-cell"><%= p.name %></td>
+        <td><%= p.category %></td>
+        <td><%= p.price > 0 ? toman(p.price) : 'استعلامی' %></td>
+        <td><%= p.old_price > 0 ? toman(p.old_price) : '-' %></td>
+        <td><%= toman(p.stock) %></td>
+        <td>
+          <form method="post" action="/admin/products/<%= p.id %>/toggle?_method=PATCH" style="display:inline">
+            <button class="pill <%= p.is_active ? 'ok':'off' %>" type="submit" title="برای تغییر وضعیت کلیک کنید">
+              <%= p.is_active ? 'فعال ✓' : 'غیرفعال ✕' %>
+            </button>
+          </form>
+        </td>
+        <td class="actions">
+          <a class="btn btn-sm btn-outline" href="/admin/products/<%= p.id %>/edit">ویرایش</a>
+          <form method="post" action="/admin/products/<%= p.id %>?_method=DELETE" style="display:inline"
+                onsubmit="return confirm('حذف این محصول؟')">
+            <button class="btn btn-sm danger" type="submit">حذف</button>
+          </form>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+<%- include('footer') %>

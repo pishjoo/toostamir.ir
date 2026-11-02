@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+
+<section class="page-head">
+  <div class="container">
+    <h1>تماس با ما / استعلام</h1>
+    <p>استعلام قیمت و وضعیت تعمیر بصورت <strong>تلفنی</strong> و یا از طریق <strong>پر کردن فرم زیر</strong> انجام می‌شود.</p>
+  </div>
+</section>
+
+<div class="container section contact-grid">
+  <div class="contact-info">
+    <h3>راه‌های ارتباطی</h3>
+    <ul>
+      <li>🌐 وب‌سایت: <strong>toostamir.ir</strong></li>
+      <li>📸 اینستاگرام: <a href="https://instagram.com/toostamir" target="_blank"><strong>@toostamir</strong></a></li>
+      <li>📞 استعلام تلفنی: پس از ثبت فرم یا تماس، کارشناس ما با شما تماس می‌گیرد.</li>
+    </ul>
+    <div class="note">💡 برای سرعت بیشتر، آیدی اینستاگرام خود را در پیام قید کنید.</div>
+  </div>
+
+  <div class="contact-form-wrap">
+    <% if (sent) { %>
+      <div class="alert success">✅ پیام شما ثبت شد. کارشناس تعمیرامیر در اسرع وقت (ترجیحاً تلفنی) با شما تماس خواهد گرفت.</div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert error">⚠️ <%= error %></div>
+    <% } %>
+    <form method="post" action="/contact" class="form">
+      <label>نام و نام خانوادگی *<input type="text" name="name" required placeholder="مثلاً علی رضایی"></label>
+      <label>شماره تماس *<input type="tel" name="phone" required placeholder="09xxxxxxxxx"></label>
+      <label>ایمیل (اختیاری)<input type="email" name="email" placeholder="example@mail.com"></label>
+      <label>موضوع
+        <input type="text" name="subject" placeholder="مثلاً استعلام تعمیر لپ‌تاپ ایسوس"
+               value="<%= typeof subject !== 'undefined' && subject ? subject : '' %>">
+      </label>
+      <label>شرح مشکل / پیام<textarea name="message" rows="5" placeholder="مدل دستگاه و مشکل را توضیح دهید..."></textarea></label>
+      <button type="submit" class="btn">ارسال درخواست استعلام</button>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
