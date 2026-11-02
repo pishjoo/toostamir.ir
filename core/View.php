@@ -12,6 +12,7 @@ class View {
         ob_start();
         include $__file;
         $__content = ob_get_clean();
+        $GLOBALS['__tt_content'] = $__content;
         if ($layout !== null) {
             $__layoutFile = rtrim(self::$viewPath, '/') . '/' . $layout . '.php';
             ob_start();
@@ -23,7 +24,7 @@ class View {
     }
 
     /** fragment render inside layout (used by layouts) */
-    public static function content(): string { global $__content; echo $__content; }
+    public static function content(): string { global $__tt_content; return (string)$__tt_content; }
 
     public static function partial(string $template, array $data = []): void {
         $__file = rtrim(self::$viewPath, '/') . '/' . $template . '.php';

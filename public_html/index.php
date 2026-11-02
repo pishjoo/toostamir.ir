@@ -41,10 +41,16 @@ $method = $_SERVER['REQUEST_METHOD'] === 'POST' ? 'POST' : 'GET';
 /* GET */
 $router->get('/',                        [FrontController::class, 'home']);
 $router->get('/khedmat',                 [FrontController::class, 'services']);
+$router->get('/khedmat-tamirat-lavamzesh-khaneghi-dar-mashhad', [FrontController::class, 'services']);
 $router->get('/tamirboard',              [FrontController::class, 'board']);
+$router->get('/dvazdah-bazar-device-ha', [FrontController::class, 'devices']);
+$router->get('/daste-bandi-dastgah-ha',  [FrontController::class, 'devices']);
 $router->get('/forushgah',               [FrontController::class, 'shop']);
+$router->get('/jostejo',                 [FrontController::class, 'search']);
 $router->get('/maghale-at',              [FrontController::class, 'articles']);
 $router->get('/faq',                     [FrontController::class, 'faqPage']);
+$router->get('/soalat-pasokh',           [FrontController::class, 'faqPage']);
+$router->get('/sitemap-pages',           [FrontController::class, 'sitemapPage']);
 $router->get('/darkhast-tamir',          [FrontController::class, 'requestForm']);
 $router->get('/peigiri-darkhast',        [FrontController::class, 'trackRequest']);
 $router->get('/tamirasal-khana-dar-mashhad-tos-tamir', [FrontController::class, 'contact']);
@@ -60,6 +66,7 @@ $router->get('/robots.txt',              [SeoController::class, 'robots']);
 
 /* POST */
 $router->post('/darkhast-tamir',         [FrontController::class, 'requestSubmit']);
+$router->post('/peigiri-darkhast',       [FrontController::class, 'trackRequest']);
 $router->post('/cart/add',               [CartController::class, 'add']);
 $router->post('/cart/update',            [CartController::class, 'update']);
 $router->post('/cart/remove',            [CartController::class, 'removeItem']);

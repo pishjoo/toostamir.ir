@@ -356,6 +356,7 @@ class FrontController {
         $this->view('front/sitemap', $this->share([
             'services' => Service::published(),
             'categories' => Category::activeTree(),
+            'brands' => Brand::activeList(),
             'articles' => Article::published(200),
             'pages' => Page::all('is_published=1', [], 'id ASC'),
             'products' => Database::all('SELECT slug,name FROM products WHERE is_published=1 ORDER BY id DESC LIMIT 500'),

@@ -33,7 +33,7 @@ class Router {
         // 404
         http_response_code(404);
         if (class_exists('View')) {
-            View::render('page/404', ['title' => 'صفحه یافت نشد'], 'layouts/main');
+            View::render('front/404', ['title' => 'صفحه یافت نشد - توس تعمیر'], 'layouts/main');
         } else {
             echo '404';
         }

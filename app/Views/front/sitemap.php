@@ -1,10 +1,11 @@
+<?php $services=$services??[]; $categories=$categories??[]; $brands=$brands??[]; $articles=$articles??[]; $pages=$pages??[]; $products=$products??[]; ?>
 <section class="section container">
   <h1>نقشه سایت توس تعمیر</h1>
   <div class="sitemap-cols grid g-4">
     <nav><h2>صفحات اصلی</h2><ul>
       <li><a href="/">خانه</a></li><li><a href="/khedmat-tamirat-lavamzesh-khaneghi-dar-mashhad">خدمات</a></li>
       <li><a href="/forushgah">فروشگاه قطعات</a></li><li><a href="/tamirasal-khana-dar-mashhad-tos-tamir">تعمیرگاه</a></li>
-      <li><a href="/maghale-at">مقالات</a></li><li><a href="/soalat-متداول">سؤالات متداول</a></li>
+      <li><a href="/maghale-at">مقالات</a></li><li><a href="/faq">سؤالات متداول</a></li>
       <li><a href="/darkhast-tamir">درخواست تعمیر</a></li><li><a href="/peigiri-order">پیگیری سفارش</a></li>
       <li><a href="/peigiri-darkhast">پیگیری درخواست</a></li><li><a href="/terms-conditions">قوانین</a></li><li><a href="/privacy">حریم خصوصی</a></li>
     </ul></nav>
