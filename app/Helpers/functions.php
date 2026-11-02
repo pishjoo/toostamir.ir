@@ -243,8 +243,94 @@ function gen_tracking_code(string $prefix = 'TT'): string {
     return $code;
 }
 
+/* ---------- redirect ---------- */
+function redirect(string $path): never {
+    if (!preg_match('#^(https?:)?//#', $path)) $path = '/' . ltrim($path, '/');
+    header('Location: ' . $path);
+    exit;
+}
+
+/* ---------- آپلود امن تصویر ---------- */
+/**
+ * @param array $files  عنصر $_FILES (تک‌فایل یا چندتایی)
+ * @param int|null $index ایندکس در حالت چندتایی
+ * @return string|null مسیر نسبی مثل /uploads/products/xxx.jpg یا null در خطا
+ */
+function upload_image(array $files, ?int $index = null, string $subdir = 'misc'): ?string {
+    static $allowedExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    static $allowedMime = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    static $maxBytes = 3145728; // 3MB
+
+    $name = $index === null ? ($files['name'] ?? '') : ($files['name'][$index] ?? '');
+    $tmp  = $index === null ? ($files['tmp_name'] ?? '') : ($files['tmp_name'][$index] ?? '');
+    $err  = $index === null ? ($files['error'] ?? UPLOAD_ERR_NO_FILE) : ($files['error'][$index] ?? UPLOAD_ERR_NO_FILE);
+    $size = $index === null ? ($files['size'] ?? 0) : ($files['size'][$index] ?? 0);
+
+    if ($name === '' || (int)$err !== UPLOAD_ERR_OK || !is_uploaded_file((string)$tmp)) return null;
+    if ((int)$size <= 0 || (int)$size > $maxBytes) { flash('error', 'حجم تصویر «' . $name . '» بیش از ۳ مگابایت است.'); return null; }
+
+    // بررسی MIME واقعی (finfo) + getimagesize — جلوگیری از فایل اجرایی/ جعلی
+    $mime = null;
+    if (function_exists('finfo_open')) {
+        $fi = finfo_open(FILEINFO_MIME_TYPE);
+        if ($fi) { $mime = finfo_file($fi, $tmp); finfo_close($fi); }
+    }
+    if ($mime === null) $mime = mime_content_type($tmp) ?: null;
+    if (!in_array((string)$mime, $allowedMime, true)) { flash('error', 'نوع فایل «' . $name . '» مجاز نیست (فقط jpg/png/webp/gif).'); return null; }
+    $imgInfo = @getimagesize($tmp);
+    if ($imgInfo === false || empty($imgInfo[0]) || empty($imgInfo[1])) return null;
+
+    $ext = match (true) {
+        $mime === 'image/png'  => 'png',
+        $mime === 'image/webp' => 'webp',
+        $mime === 'image/gif'  => 'gif',
+        default => 'jpg',
+    };
+    $subdir = preg_replace('/[^a-z0-9_\-]/i', '', $subdir) ?: 'misc';
+    $cfgDir = $GLOBALS['TT_APP']['paths']['root'] . '/public_html/uploads/' . $subdir;
+    if (!is_dir($cfgDir)) @mkdir($cfgDir, 0755, true);
+    $fname = date('Ymd-His') . '-' . bin2hex(random_bytes(6)) . '.' . $ext;
+    if (!move_uploaded_file($tmp, $cfgDir . '/' . $fname)) return null;
+
+    $rel = '/uploads/' . $subdir . '/' . $fname;
+    try {
+        Database::run('INSERT INTO media (path, original_name, mime_type, size_bytes, width, height, uploaded_by) VALUES (?,?,?,?,?,?,?)',
+            [$rel, mb_substr((string)$name, 0, 200), $mime, (int)$size, (int)$imgInfo[0], (int)$imgInfo[1], $_SESSION['admin_uid'] ?? null]);
+    } catch (Throwable $ex) { error_log('[media] ' . $ex->getMessage()); }
+    return $rel;
+}
+
+/** حذف فیزیکی + رکورد media */
+function delete_upload(?string $relPath): void {
+    if (!$relPath || !str_starts_with($relPath, '/uploads/')) return;
+    $full = realpath($GLOBALS['TT_APP']['paths']['root'] . '/public_html' . $relPath);
+    $base = realpath($GLOBALS['TT_APP']['paths']['root'] . '/public_html/uploads');
+    if ($full && $base && str_starts_with($full, $base) && is_file($full)) @unlink($full);
+    try { Database::run('DELETE FROM media WHERE path=?', [$relPath]); } catch (Throwable) {}
+}
+
+/* ---------- pagination ---------- */
+function paginate_links(int $page, int $pages, string $baseUrl): string {
+    if ($pages <= 1) return '';
+    $sep = str_contains($baseUrl, '?') ? '&' : '?';
+    $out = '<nav class="pagination-wrap" aria-label="صفحه‌بندی"><ul class="pagination">';
+    $win = [];
+    for ($i = max(1, $page - 2); $i <= min($pages, $page + 2); $i++) $win[] = $i;
+    if ($page > 2) $out .= '<li><a class="pg" href="' . e($baseUrl . $sep . 'page=' . ($page - 1)) . '">›</a></li>';
+    if (!in_array(1, $win, true)) $out .= '<li><a class="pg" href="' . e($baseUrl . $sep . 'page=1') . '">۱</a></li><li><span class="pg-dots">…</span></li>';
+    foreach ($win as $i) {
+        $out .= $i === $page
+            ? '<li><span class="pg cur" aria-current="page">' . fa_digits((string)$i) . '</span></li>'
+            : '<li><a class="pg" href="' . e($baseUrl . $sep . 'page=' . $i) . '">' . fa_digits((string)$i) . '</a></li>';
+    }
+    if (!in_array($pages, $win, true)) $out .= '<li><span class="pg-dots">…</span></li><li><a class="pg" href="' . e($baseUrl . $sep . 'page=' . $pages) . '">' . fa_digits((string)$pages) . '</a></li>';
+    if ($page < $pages) $out .= '<li><a class="pg" href="' . e($baseUrl . $sep . 'page=' . ($page + 1)) . '">‹</a></li>';
+    return $out . '</ul></nav>';
+}
+
 /* ---------- misc ---------- */
 function old(array $data, string $key, string $default = ''): string { return (string)($data[$key] ?? $default); }
+function arr_old(string $key): array { return (array)($_SESSION['old_form'][$key] ?? []); }
 function is_secure_request(): bool { return !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'; }
 function json_out($data, int $code = 200): never { http_response_code($code); header('Content-Type: application/json; charset=utf-8'); echo json_encode($data, JSON_UNESCAPED_UNICODE); exit; }
 

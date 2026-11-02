@@ -19,10 +19,11 @@ class Order extends BaseModel {
         'carrier','shipment_tracking','status','payment_status','notes','internal_note','ip_address'];
 
     public const STATUSES = [
-        'pending' => 'در انتظار پرداخت', 'paid' => 'پرداخت شده', 'processing' => 'در حال پردازش',
-        'shipped' => 'ارسال شده', 'delivered' => 'تحویل شده', 'cancelled' => 'لغو شده', 'refunded' => 'بازگشت داده شده',
+        'pending_payment' => 'در انتظار پرداخت', 'paid' => 'پرداخت‌شده', 'processing' => 'در حال آماده‌سازی',
+        'shipped' => 'ارسال‌شده', 'delivered' => 'تحویل‌شده', 'cancelled' => 'لغوشده',
+        'returned' => 'مرجوع‌شده', 'payment_failed' => 'پرداخت ناموفق',
     ];
-    public const PAYMENTS = ['unpaid' => 'پرداخت نشده', 'paid' => 'موفق', 'failed' => 'ناموفق'];
+    public const PAYMENTS = ['unpaid' => 'پرداخت نشده', 'paid' => 'پرداخت‌شده', 'failed' => 'ناموفق', 'refunded' => 'بازگشت وجه'];
 
     public static function byTracking(string $code): ?array { return static::findBy('tracking_code', strtoupper(trim($code))); }
     public static function items(int $orderId): array {
@@ -35,6 +36,71 @@ class Order extends BaseModel {
         Database::run('INSERT INTO order_status_history (order_id, from_status, to_status, note, changed_by) VALUES (?,?,?,?,?)',
             [$orderId, $old ?: null, $status, $note !== '' ? mb_substr($note, 0, 500) : null, $_SESSION['admin_uid'] ?? null]);
     }
+    public static function history(int $orderId): array {
+        return Database::all('SELECT h.*, u.name changed_by_name FROM order_status_history h LEFT JOIN users u ON u.id=h.changed_by WHERE h.order_id=? ORDER BY h.id ASC', [$orderId]);
+    }
+    /** ساخت سفارش از سبد در یک تراکنش اتمی */
+    public static function createFromCart(array $data, int $cartId): array {
+        $items = Database::all('SELECT ci.*, p.name, p.slug, p.stock_quantity FROM cart_items ci JOIN products p ON p.id=ci.product_id WHERE ci.cart_id=?', [$cartId]);
+        if (!$items) return ['ok' => false, 'msg' => 'سبد خرید خالی است.'];
+        $subtotal = 0;
+        foreach ($items as $it) $subtotal += (int)$it['unit_price'] * (int)$it['quantity'];
+
+        $shipMethodId = (int)($data['shipping_method_id'] ?? 0) ?: null;
+        $shippingCost = 0;
+        if ($shipMethodId) {
+            $sm = Database::one('SELECT * FROM shipping_methods WHERE id=? AND is_active=1', [$shipMethodId]);
+            if ($sm) {
+                $shippingCost = (int)$sm['cost'];
+                if ($sm['free_over_amount'] !== null && $subtotal >= (int)$sm['free_over_amount']) $shippingCost = 0;
+            }
+        }
+        $discount = 0; $couponId = null;
+        if (!empty($data['coupon_code'])) {
+            $v = Coupon::validate((string)$data['coupon_code'], $subtotal, $data['customer_id'] ?? null);
+            if ($v['ok']) { $discount = (int)$v['discount']; $couponId = (int)$v['coupon']['id']; }
+        }
+        $total = max(0, $subtotal - $discount) + $shippingCost;
+
+        Database::begin();
+        try {
+            $code = self::uniqueTrackingCode();
+            $oid = self::insert([
+                'tracking_code' => $code,
+                'customer_id' => $data['customer_id'] ?? null,
+                'name' => $data['name'], 'mobile' => $data['mobile'], 'email' => $data['email'] ?? null,
+                'province' => $data['province'] ?? null, 'city' => $data['city'] ?? null,
+                'address' => $data['address'] ?? null, 'postal_code' => $data['postal_code'] ?? null,
+                'subtotal' => $subtotal, 'discount_amount' => $discount, 'shipping_cost' => $shippingCost,
+                'total_amount' => $total, 'coupon_id' => $couponId, 'shipping_method_id' => $shipMethodId,
+                'notes' => $data['notes'] ?? null, 'status' => 'pending_payment', 'payment_status' => 'unpaid',
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            ]);
+            foreach ($items as $it) {
+                Database::run('INSERT INTO order_items (order_id, product_id, product_name, sku, quantity, unit_price, line_total) VALUES (?,?,?,?,?,?,?)',
+                    [$oid, (int)$it['product_id'], $it['name'], $it['sku'], (int)$it['quantity'], (int)$it['unit_price'], (int)$it['unit_price'] * (int)$it['quantity']]);
+                // قفل ردیف و کاهش موجودی
+                $st = Database::run('UPDATE products SET stock_quantity = GREATEST(stock_quantity - ?, 0), sold_count = sold_count + ?,
+                                    stock_status = CASE WHEN stock_quantity <= 0 THEN \'out_of_stock\' WHEN stock_quantity <= 3 THEN \'low\' ELSE stock_status END
+                                    WHERE id=?', [(int)$it['quantity'], (int)$it['quantity'], (int)$it['product_id']]);
+                if ($st->rowCount() === 0) throw new RuntimeException('product-missing:' . $it['product_id']);
+            }
+            if ($couponId) Coupon::consume($couponId, $oid, $data['customer_id'] ?? null);
+            Database::run('DELETE FROM cart_items WHERE cart_id=?', [$cartId]);
+            Database::commit();
+            audit_log('order_created', 'order', $oid, 'tracking=' . $code);
+            return ['ok' => true, 'id' => $oid, 'tracking' => $code, 'total' => $total];
+        } catch (Throwable $e) {
+            Database::rollBack();
+            error_log('[order] ' . $e->getMessage());
+            return ['ok' => false, 'msg' => 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.'];
+        }
+    }
+    private static function uniqueTrackingCode(): string {
+        do { $code = 'ORD-' . strtoupper(bin2hex(random_bytes(3))); }
+        while (Database::scalar('SELECT COUNT(*) FROM orders WHERE tracking_code=?', [$code], 0) > 0);
+        return $code;
+    }
 }
 
 class ServiceRequest extends BaseModel {
@@ -43,8 +109,8 @@ class ServiceRequest extends BaseModel {
         'mobile','problem_description','address','preferred_time','extra_notes','status','internal_note','ip_address'];
 
     public const STATUSES = [
-        'new' => 'جدید', 'assigned' => 'اعطا شده به تکنسین', 'diagnosis' => 'در حال عیب‌یابی',
-        'repairing' => 'در حال تعمیر', 'done' => 'تعمیر شد', 'returned' => 'تحویل مشتری', 'cancelled' => 'لغو شده',
+        'new' => 'جدید', 'reviewing' => 'در حال بررسی', 'called' => 'تماس گرفته شد', 'scheduled' => 'هماهنگ‌شده',
+        'in_progress' => 'در حال انجام', 'completed' => 'تکمیل‌شده', 'cancelled' => 'لغوشده',
     ];
 
     public static function byTracking(string $code): ?array {
