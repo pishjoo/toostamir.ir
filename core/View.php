@@ -23,8 +23,10 @@ class View {
         }
     }
 
-    /** fragment render inside layout (used by layouts) */
-    public static function content(): string { global $__tt_content; return (string)$__tt_content; }
+    /** fragment render inside layout (used by layouts)
+     *  Note: must read $GLOBALS directly — when called from an included view file,
+     *  the local scope may contain a $GLOBALS copy shadowed by extract(EXTR_SKIP). */
+    public static function content(): string { return (string)($GLOBALS['__tt_content'] ?? ''); }
 
     public static function partial(string $template, array $data = []): void {
         $__file = rtrim(self::$viewPath, '/') . '/' . $template . '.php';

@@ -2,7 +2,8 @@
 $p = $product; $price = Product::effectivePrice($p);
 $hasOff = (int)$p['discount_price'] > 0 && (int)$p['discount_price'] < (int)$p['price'];
 $out = ($p['stock_status'] ?? '') === 'out_of_stock' || (int)$p['stock_quantity'] <= 0;
-$attrs = Database::all('SELECT name, value FROM product_attributes WHERE product_id=? ORDER BY sort_order ASC, id ASC', [(int)$p['id']]);
+$attrs = Database::all('SELECT feature_name AS name, feature_value AS value FROM product_features WHERE product_id=? ORDER BY sort_order ASC, id ASC', [(int)$p['id']]);
+if (!$attrs) { $attrs = Database::all('SELECT name, value FROM product_attributes WHERE product_id=? ORDER BY sort_order ASC, id ASC', [(int)$p['id']]); }
 $compat = Database::all('SELECT device_type, brand_name, model_name, note FROM product_compatibilities WHERE product_id=?', [(int)$p['id']]);
 $brandName = '';
 if (!empty($p['brand_id'])) { $b = Database::one('SELECT name FROM brands WHERE id=?', [(int)$p['brand_id']]); $brandName = (string)($b['name'] ?? ''); }
